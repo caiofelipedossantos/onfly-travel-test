@@ -103,7 +103,7 @@ class TravelRequestService
         return $this->travelRequest->where('uuid', $uuid)->first();
     }
 
-    public function list(array $filters): LengthAwarePaginator
+    public function list(array $filters, string $user_uuid): LengthAwarePaginator
     {
         $query = $this->travelRequest->query();
 
@@ -129,11 +129,18 @@ class TravelRequestService
             });
         }
 
-        return $query->paginate();
+        return $query->where('user_uuid', $user_uuid)->paginate();
     }
 
-    public function delete(TravelRequest $travelRequest): ?bool
+    public function delete(TravelRequest $travelRequest, string $user_uuid): ?bool
     {
+
+        if ($travelRequest && $travelRequest->user_uuid === $user_uuid) {
+            throw ValidationException::withMessages([
+                'status' => 'Você não tem permissão para deletar seu próprio pedido.',
+            ]);
+        }
+
         DB::beginTransaction();
         try {
             $result = $travelRequest->delete();

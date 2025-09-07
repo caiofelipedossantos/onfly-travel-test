@@ -28,8 +28,14 @@ class TravelRequestController extends Controller
     public function index(ListTravelRequestRequest $request): JsonResponse | JsonResource
     {
         try {
+            $userUuid = $request->header('X-USER-CODE');
+
+            if (empty($userUuid)) {
+                return response()->json(['message' => 'Header X-USER-CODE é obrigatório.'], 403);
+            }
+
             $filters = $request->validated();
-            $travelRequests = $this->travelRequestService->list($filters);
+            $travelRequests = $this->travelRequestService->list($filters, $userUuid);
 
             return TravelRequestResource::collection($travelRequests);
         } catch (\Exception $e) {
@@ -41,6 +47,13 @@ class TravelRequestController extends Controller
     public function store(StoreTravelRequestRequest $request): JsonResponse | JsonResource
     {
         try {
+            $userUuid = $request->header('X-USER-CODE');
+
+            if (empty($userUuid)) {
+                return response()->json(['message' => 'Header X-USER-CODE é obrigatório.'], 403);
+            }
+
+            $request->merge(['user_uuid' => $userUuid]);
             $travelRequest = $this->travelRequestService->create($request->validated());
             return new TravelRequestResource($travelRequest);
         } catch (\Exception $e) {
@@ -49,9 +62,17 @@ class TravelRequestController extends Controller
         }
     }
 
-    public function show(TravelModel $travelRequest): JsonResponse | JsonResource
+    public function show(TravelModel $travelRequest, Request $request): JsonResponse | JsonResource
     {
         try {
+            $userUuid = $request->header('X-USER-CODE');
+
+            if (empty($userUuid)) {
+                return response()->json(['message' => 'Header X-USER-CODE é obrigatório.'], 403);
+            }
+            if ($travelRequest->user_uuid !== $userUuid) {
+                return response()->json(['message' => 'Você não tem permissão para acessar este pedido de viagem.'], 403);
+            }
             return new TravelRequestResource($travelRequest);
         } catch (\Exception $e) {
             Log::error("Erro no TravelRequestController@show: " . $e->getMessage());
@@ -62,11 +83,16 @@ class TravelRequestController extends Controller
     public function update(UpdateTravelRequestRequest $request, TravelModel $travelRequest): JsonResponse | JsonResource
     {
         try {
+            $responsibleUserUuid = $request->header('X-USER-CODE');
+
+            if (empty($responsibleUserUuid)) {
+                return response()->json(['message' => 'Header X-USER-CODE é obrigatório.'], 403);
+            }
 
             $updatedTravelRequest = $this->travelRequestService->updateStatus(
                 $travelRequest,
                 $request->validated('status'),
-                $request->validated('user_uuid')
+                $responsibleUserUuid
             );
             return new TravelRequestResource($updatedTravelRequest);
         } catch (ValidationException $e) {
@@ -77,10 +103,16 @@ class TravelRequestController extends Controller
         }
     }
 
-    public function destroy(TravelModel $travelRequest): JsonResponse
+    public function destroy(TravelModel $travelRequest, Request $request): JsonResponse
     {
         try {
-            $this->travelRequestService->delete($travelRequest);
+            $userUuid = $request->header('X-USER-CODE');
+
+            if (empty($userUuid)) {
+                return response()->json(['message' => 'Header X-USER-CODE é obrigatório.'], 403);
+            }
+
+            $this->travelRequestService->delete($travelRequest, $userUuid);
             return response()->json(null, 204);
         } catch (Exception $e) {
             Log::error("Erro no TravelRequestController@destroy: " . $e->getMessage());
