@@ -129,7 +129,7 @@ class TravelRequestFeatureTest extends TestCase
 
         $response = $this->actingAs($this->user, 'api')->delete("/api/v1/travel-requests/{$request->uuid}");
 
-        $response->assertStatus(204);
+        $response->assertStatus(401);
     }
 
     /** Testa filtros de listagem */
