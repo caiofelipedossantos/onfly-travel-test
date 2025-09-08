@@ -2,7 +2,7 @@ services:
     onfly_travel_app:
         build:
             args:
-                user: onfly
+                user: onfly_app
                 uid: 1000
             context: ./
             dockerfile: Dockerfile
@@ -13,6 +13,9 @@ services:
             - ./:/var/www
         networks:
             - onfly_travel_network
+        depends_on:
+            - onfly_travel_db
+            - onfly_travel_redis
 
     onfly_travel_nginx:
         image: nginx:alpine
@@ -24,6 +27,8 @@ services:
 
         networks:
             - onfly_travel_network
+        depends_on:
+            - onfly_travel_app
 
     onfly_travel_db:
         image: mysql
@@ -40,6 +45,33 @@ services:
         networks:
             - onfly_travel_network
 
+
+    onfly_travel_redis:
+        image: redis:latest
+        restart: unless-stopped
+        ports:
+            - 6379:6379
+        networks:
+            - onfly_travel_network
+
+    onfly_travel_queue:
+        build:
+            args:
+                user: onfly_queue
+                uid: 1001
+            context: ./
+            dockerfile: Dockerfile
+        restart: unless-stopped
+        working_dir: /var/www/
+        command: "php artisan queue:work --sleep=3 --tries=3"
+        volumes:
+            - ./:/var/www
+        networks:
+            - onfly_travel_network
+        depends_on:
+            - onfly_travel_app
+            - onfly_travel_db
+            - onfly_travel_redis
 
 networks:
     onfly_travel_network:
