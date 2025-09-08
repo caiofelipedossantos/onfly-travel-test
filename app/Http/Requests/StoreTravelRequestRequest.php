@@ -22,7 +22,7 @@ class StoreTravelRequestRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_uuid'         => ['required', 'uuid', 'max:36'],
+            'user_id'           => ['required', 'integer', 'exists:users,id'],
             'external_id'       => ['required', 'string', 'max:255', 'unique:travel_requests,external_id'],
             'requestor_name'    => ['required', 'string', 'max:255'],
             'destination'       => ['required', 'string', 'max:255'],
@@ -34,9 +34,9 @@ class StoreTravelRequestRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'user_uuid.required' => 'O UUID do usuário é obrigatório.',
-            'user_uuid.uuid' => 'O UUID do usuário deve ser um UUID válido.',
-            'user_uuid.max' => 'O UUID do usuário não pode ter mais de :max caracteres.',
+            'user_id.required' => 'O ID do usuário é obrigatório.',
+            'user_id.integer' => 'O ID do usuário deve ser um número inteiro.',
+            'user_id.exists' => 'O ID do usuário deve existir na tabela de usuários.',
 
             'external_id.required' => 'O ID do pedido é obrigatório.',
             'external_id.unique' => 'O ID do pedido já está em uso.',

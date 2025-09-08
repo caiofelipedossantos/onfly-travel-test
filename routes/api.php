@@ -1,7 +1,19 @@
 <?php
 
-use App\Http\Controllers\TravelRequestController;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\TravelRequestController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::apiResource('travel-requests', TravelRequestController::class);
+
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
+
+
+Route::middleware('auth:api')->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/me', [AuthController::class, 'me']);
+
+    Route::apiResource('travel-requests', TravelRequestController::class);
+
+});

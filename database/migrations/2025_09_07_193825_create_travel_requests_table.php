@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('travel_requests', function (Blueprint $table) {
             $table->id();
             $table->uuid()->unique();
-            $table->uuid('user_uuid')->index()->comment('UUID do usuário que fez o pedido.');
+            $table->foreignId('user_id')->constrained('users')->comment('ID do usuário que fez o pedido.');
             $table->string('external_id')->unique()->index()->comment('Identificador externo do pedido.');
             $table->string('requestor_name')->comment('Nome do solicitante da viagem.');
             $table->string('destination')->comment('Destino da viagem.');

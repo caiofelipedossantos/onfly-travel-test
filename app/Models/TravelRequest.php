@@ -18,7 +18,7 @@ class TravelRequest extends Model
      */
     protected $fillable = [
         'uuid',
-        'user_uuid',
+        'user_id',
         'external_id',
         'requestor_name',
         'destination',
@@ -48,5 +48,10 @@ class TravelRequest extends Model
     public function getRouteKeyName(): string
     {
         return 'uuid';
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

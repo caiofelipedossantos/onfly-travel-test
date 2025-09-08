@@ -21,7 +21,7 @@ class TravelRequestFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_uuid' => $this->faker->uuid(),
+            'user_id' => $this->faker->numberBetween(1, 10),
             'external_id' => $this->faker->unique()->word(),
             'requestor_name' => $this->faker->name(),
             'destination' => $this->faker->city(),
