@@ -1,66 +1,189 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Onfly Travel Test
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Este projeto gerencia pedidos de viagem. O sistema utiliza Laravel 11, MySQL, Redis e autenticação JWT.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 1. Requisitos
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- Docker & Docker Compose
+- PHP 8.2 (via container)
+- Composer (via container)
+- MySQL
+- Redis
+- Mailtrap (para teste de e-mail)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## 2. Estrutura de Containers
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+| Serviço | Descrição |
+|---------|-----------|
+| `onfly_travel_app` | Container PHP/Laravel |
+| `onfly_travel_nginx` | Servidor web Nginx |
+| `onfly_travel_db` | MySQL |
+| `onfly_travel_redis` | Redis (queues) |
+| `onfly_travel_queue` | Worker Laravel para processar jobs |
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+---
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## 3. Inicializando os containers
 
-## Laravel Sponsors
+1. Construa e inicie todos os containers:
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+docker compose up -d --build
 
-### Premium Partners
+2. Acesse o container da aplicação para rodar comandos Artisan:
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+docker compose exec onfly_travel_app bash
 
-## Contributing
+---
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## 4. Configuração do ambiente
 
-## Code of Conduct
+1. Copie o arquivo `.env.example` para `.env`:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+cp .env.example .env
 
-## Security Vulnerabilities
+2. Configure as variáveis de banco de dados (MySQL) e Redis:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+DB_CONNECTION=mysql  
+DB_HOST=onfly_travel_db  
+DB_PORT=3306  
+DB_DATABASE=travel_requests  
+DB_USERNAME=root  
+DB_PASSWORD=senha  
 
-## License
+CACHE_DRIVER=redis  
+QUEUE_CONNECTION=redis  
+REDIS_HOST=onfly_travel_redis  
+REDIS_PORT=6379  
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+3. Configure o Mail (para teste com Mailtrap):
+
+MAIL_MAILER=smtp  
+MAIL_HOST=smtp.mailtrap.io  
+MAIL_PORT=2525  
+MAIL_USERNAME=<SEU_USER_MAILTRAP>  
+MAIL_PASSWORD=<SEU_PASS_MAILTRAP>  
+MAIL_FROM_ADDRESS=no-reply@example.com  
+MAIL_FROM_NAME="Travel Requests"  
+
+4. Gere chave Laravel e JWT:
+
+php artisan key:generate  
+php artisan jwt:secret  
+
+---
+
+## 5. Banco de dados
+
+1. Execute migrations e seeders:
+
+php artisan migrate --seed
+
+2. Verifique se as tabelas foram criadas corretamente.
+
+---
+
+## 6. Executando o Worker da fila
+
+O container `onfly_travel_queue` já roda o worker Laravel automaticamente. Para monitorar:
+
+docker compose logs -f onfly_travel_queue
+
+> Este worker processa jobs de envio de e-mails quando um pedido é **aprovado ou cancelado**.
+
+---
+
+## 7. Autenticação JWT
+
+O sistema utiliza **JWT** para autenticação API. Os endpoints disponíveis:
+
+| Método | Endpoint | Payload / Observações |
+|--------|----------|----------------------|
+| POST   | `/api/v1/register` | `{ "name": "...", "email": "...", "password": "...", "password_confirmation": "..." }` |
+| POST   | `/api/v1/login` | `{ "email": "...", "password": "..." }` |
+| GET    | `/api/v1/me` | Retorna dados do usuário autenticado. Requer Bearer Token. |
+| POST   | `/api/v1/logout` | Encerra a sessão JWT do usuário. Requer Bearer Token. |
+
+> **Observação:** Ao registrar, a senha deve ser confirmada (`password_confirmation`).
+
+---
+
+## 8. Travel Requests
+
+### Criar um pedido de viagem
+
+**Endpoint:** POST `/api/v1/travel-requests`  
+**Exemplo de payload:**
+
+{
+  "external_id": "ORSC3450",
+  "requestor_name": "Caio Felipe",
+  "destination": "Curitiba-PR",
+  "departure_date": "2025-09-28 05:00:00",
+  "return_date": "2025-09-28 24:00:00"
+}
+
+**Autenticação:** Bearer Token (JWT)
+
+---
+
+### Atualizar status de um pedido
+
+**Endpoint:** PUT `/api/v1/travel-requests/{uuid}`  
+**Payload:** apenas o status
+
+{
+  "status": "approved" // ou "canceled"
+}
+
+**Regras:**
+
+- Usuário não pode alterar o status do próprio pedido.
+- Pedido cancelado não pode ser alterado novamente.
+- Pedido aprovado com data de partida no passado não pode ser cancelado.
+
+---
+
+### Listar pedidos de viagem
+
+**Endpoint:** GET `/api/v1/travel-requests`  
+**Parâmetros via URL (opcional):**
+
+- `status` → filtra pelo status (`requested`, `approved`, `canceled`)
+- `destination` → filtra pelo destino (case-insensitive)
+- `start_date` → filtra pedidos com `departure_date >= start_date`  
+- `end_date` → filtra pedidos com `return_date <= end_date`
+
+**Exemplo:**
+
+GET `/api/v1/travel-requests?status=approved&destination=Curitiba&start_date=2025-09-01&end_date=2025-09-30`
+
+**Autenticação:** Bearer Token (JWT)
+
+---
+
+## 9. Testes
+
+1. Execute os testes dentro do container:
+
+docker compose exec onfly_travel_app php artisan test
+
+2. Os testes cobrem:
+
+- Criação de pedidos de viagem
+- Aprovação/cancelamento por outro usuário
+- Restrições de status
+- Listagem com filtros
+- Soft delete
+
+---
+
+## 10. Observações importantes
+
+- Jobs de envio de e-mail recebem apenas o **UUID** da Travel Request.
+- Exclusão de pedidos é **soft delete**, mantendo histórico.
+- As datas devem estar no formato `Y-m-d H:i:s`.
+- Todos os endpoints protegidos exigem JWT válido no header `Authorization: Bearer <TOKEN>`.
