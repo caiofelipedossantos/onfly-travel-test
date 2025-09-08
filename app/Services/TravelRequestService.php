@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\SendTravelRequestStatusEmail;
 use App\Models\TravelRequest;
 use Exception;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -77,8 +78,10 @@ class TravelRequestService
         try {
             $travelRequest->status = $newStatus;
             $travelRequest->save();
-
             DB::commit();
+
+            SendTravelRequestStatusEmail::dispatch($travelRequest->uuid, $newStatus);
+
             return $travelRequest;
         } catch (ValidationException $e) {
             DB::rollBack();
